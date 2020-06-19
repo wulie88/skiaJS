@@ -1,5 +1,5 @@
 const { platform } = process;
-const skia = require(`../build/${platform}/Release/skiaJS.node`);
+const skia = require(`../build/Release/skiaJS.node`);
 
 function skColorSetArgb(a, r, g, b) {
     return (((a) << 24) | ((r) << 16) | ((g) << 8) | (b));
