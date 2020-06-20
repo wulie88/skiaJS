@@ -1,21 +1,28 @@
 const yoga = require('yoga-layout')
 const {Node} = yoga
 
-const document = Node.create();
+function createNode () {
+  const node = Node.create();
+  node.setDisplay(yoga.DISPLAY_FLEX)
+  node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+  return node
+}
+
+const document = createNode();
 document.setWidth(500);
 document.setHeight(600);
 document.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
 // document.setJustifyContent(yoga.JUSTIFY_CENTER);
 
-const wrap = Node.create();
+const wrap = createNode();
 wrap.setFlex(1);
 document.insertChild(wrap, 0);
 
-const header = Node.create();
+const header = createNode();
 header.setHeight(100);
 wrap.insertChild(header, 0);
 
-const section = Node.create();
+const section = createNode();
 section.setFlex(1);
 section.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
 section.setFlexDirection(yoga.FLEX_DIRECTION_ROW)
@@ -23,21 +30,21 @@ section.setFlexDirection(yoga.FLEX_DIRECTION_ROW)
 wrap.insertChild(section, 1);
 
 
-const section0 = Node.create();
+const section0 = createNode();
 section0.setFlex(1);
 section.insertChild(section0, 0);
-const section1 = Node.create();
+const section1 = createNode();
 section1.setWidth(400);
 section.insertChild(section1, 1);
-const section2 = Node.create();
+const section2 = createNode();
 section2.setFlex(1);
 section.insertChild(section2, 2);
 
-const footer = Node.create();
+const footer = createNode();
 footer.setHeight(50);
 wrap.insertChild(footer, 2);
 
-const copyText = Node.create();
+const copyText = createNode();
 copyText.setFlex(1);
 copyText.setMargin(yoga.EDGE_TOP, 20)
 copyText.setMargin(yoga.EDGE_BOTTOM, 20)
