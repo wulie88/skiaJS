@@ -78,7 +78,7 @@ glfwSetMouseButtonCallback(window, mouse_button_callback);
 // glfwSetCursorEnterCallback(window, cursor_enter_callback);
 const canvas = skSurfaceGetCanvas(surface);
 
-const document = require('./dom-tree-static')
+const document = require('./jsx')
 
 function draw() {
   skCanvasSave(canvas);
