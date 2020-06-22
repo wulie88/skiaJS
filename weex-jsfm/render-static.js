@@ -6,14 +6,30 @@ Object.assign(global, glfw);
 Object.assign(global, skia);
 
 function error_callback(error, description) {
-    console.log(arguments);
+  console.log(arguments);
 }
 
 function key_callback(window, key, scancode, action, mods) {
-    console.log(window, key, scancode, action, mods);
-    if (key == 256 && action == 1) {
-        glfwSetWindowShouldClose(window, GL_TRUE);
+  console.log(window, key, scancode, action, mods);
+  if (key == 256 && action == 1) {
+    glfwSetWindowShouldClose(window, GL_TRUE);
+  }
+}
+
+function cursor_position_callback(window, xpos, ypos) {
+  document.dispatchMouseEventMove(xpos, ypos)
+}
+
+// button: 1GLFW_MOUSE_BUTTON_LEFT, 2GLFW_MOUSE_BUTTON_RIGHT, 3GLFW_MOUSE_BUTTON_MIDDLE
+// action: 0GLFW_RELEASE, 1GLFW_PRESS, 2GLFW_REPEAT
+function mouse_button_callback(window, button, action, mods) {
+  if (button == glfw.GLFW_MOUSE_BUTTON_LEFT) {
+    if (action == glfw.GLFW_PRESS) {
+      document.dispatchMouseEventLeftDown()
+    } else if (action == glfw.GLFW_RELEASE) {
+      document.dispatchMouseEventLeftUp()
     }
+  }
 }
 
 const kWidth = 1280;
@@ -22,7 +38,7 @@ const kHeight = 720;
 let window;
 glfwSetErrorCallback(error_callback);
 if (!glfwInit()) {
-    process.exit(1);
+  process.exit(1);
 }
 
 glfwWindowHint(0x00022002, 3);
@@ -36,8 +52,8 @@ glfwWindowHint(0x00021005, 0);
 
 window = glfwCreateWindow(kWidth, kHeight, "Simple example", null, null);
 if (!window) {
-    glfwTerminate();
-    process.exit(1);
+  glfwTerminate();
+  process.exit(1);
 }
 glfwMakeContextCurrent(window);
 //(uncomment to enable correct color spaces) glEnable(GL_FRAMEBUFFER_SRGB);
@@ -57,55 +73,59 @@ const surface = skSurfaceNewBackendRenderTarget(context, target, enums.BOTTOM_LE
 
 glfwSwapInterval(1);
 glfwSetKeyCallback(window, key_callback);
+glfwSetCursorPosCallback(window, cursor_position_callback);
+glfwSetMouseButtonCallback(window, mouse_button_callback);
+// glfwSetCursorEnterCallback(window, cursor_enter_callback);
 const canvas = skSurfaceGetCanvas(surface);
 
-const root = require('./dom-tree-static')
+const document = require('./dom-tree-static')
 
 function draw() {
-    skCanvasSave(canvas);
-    skCanvasScale(canvas, devicePixelRatio, devicePixelRatio);
-    const fill = skPaintNew();
-    skPaintSetColor(fill, skColorSetArgb(0xFF, 0x00, 0x00, 0x00));
-    skCanvasDrawPaint(canvas, fill);
+  skCanvasSave(canvas);
+  skCanvasScale(canvas, devicePixelRatio, devicePixelRatio);
+  const fill = skPaintNew();
+  skPaintSetColor(fill, skColorSetArgb(0xFF, 0x00, 0x00, 0x00));
+  skCanvasDrawPaint(canvas, fill);
+  
+  document.buildNodes()
+  document.renderTick(canvas)
 
-    root.render(canvas)
-
-    skCanvasRestore(canvas);
+  skCanvasRestore(canvas);
 }
 
 let frames = 0;
 let t0 = 0;
 let previous = glfwGetTime();
 function drawLoop() {
-    if (!glfwWindowShouldClose(window)) {
-        setTimeout(() => {
-            const t = performance.now();
-            if (t - t0 > 1000.0 || frames === 0) {
-                const fps = Math.floor((frames / (t - t0)) * 1e3);
-                glfwSetWindowTitle(window, `FPS: ${fps}`);
-                t0 = t;
-                frames = 0;
-            }
-            frames++;
+  if (!glfwWindowShouldClose(window)) {
+    setTimeout(() => {
+      const t = performance.now();
+      if (t - t0 > 1000.0 || frames === 0) {
+        const fps = Math.floor((frames / (t - t0)) * 1e3);
+        glfwSetWindowTitle(window, `FPS: ${fps}`);
+        t0 = t;
+        frames = 0;
+      }
+      frames++;
 
-            drawLoop();
-        }, 0);
-    } else {
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        process.exit(0);
-    }
+      drawLoop();
+    }, 0);
+  } else {
+    glfwDestroyWindow(window);
+    glfwTerminate();
+    process.exit(0);
+  }
 
-    let now = glfwGetTime();
-    let delta = now - previous;
-    previous = now;
+  let now = glfwGetTime();
+  let delta = now - previous;
+  previous = now;
 
-    draw(canvas, devicePixelRatio, now);
+  draw(canvas, devicePixelRatio, now);
 
-    grContextFlush(context);
+  grContextFlush(context);
 
-    glfwSwapBuffers(window);
+  glfwSwapBuffers(window);
 
-    glfwPollEvents();
+  glfwPollEvents();
 }
 drawLoop();

@@ -1,106 +1,129 @@
 const yoga = require('yoga-layout')
-const {Node} = yoga
+const { Node } = yoga
 
-const document = Node.create();
-document.setWidth(1280);
-document.setHeight(720);
-document.setDisplay(yoga.DISPLAY_FLEX)
-document.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+function RectContainsPoint(rect, point) {
+  return point.x > rect.left && point.x < rect.left + rect.width
+    && point.y > rect.top && point.y < rect.top + rect.height
+}
+
+function randomColor() {
+  return skColorSetArgb(0xFF, Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255))
+}
+
+class Event {
+  constructor (name, x, y) {
+    this.name = name
+    this.x = x
+    this.y = y
+    this.target = null
+  }
+}
+
+const root = Node.create();
+root.setWidth(1280);
+root.setHeight(720);
+root.setDisplay(yoga.DISPLAY_FLEX)
+root.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
 
 var rid = 1, id = 1
-class Div {
-  constructor ({children, child, style, text} = options) {
-    this.id = id ++
+class Element {
+  constructor(options) {
+    const { children, child, style, text } = options
+    this.id = id++
+    this.zIndex = 0 // 视图层次
     this.style = style
     this.children = children || []
     this.child = child
-    this.text = text
+    this.text = text || ""
+    this.handlers = {}
+    this.userInteractionEnabled = false
+    if ('onClick' in options) {
+      this.userInteractionEnabled = true
+      this.handlers['onClick'] = options['onClick'].bind(this)
+    }
+    console.log(`constructor ${this.constructor.name}[id${this.id}] ${text}`)
   }
 
-  get name () {
+  addChild (child) {
+    this.children.push(child)
+  }
+
+  get name() {
     return this.constructor.name
   }
 
-  get nodes () {
-    return this.children.length + this.child ? 1: 0
+  get nodes() {
+    return this.children.length + this.child ? 1 : 0
   }
 
-  get bounds () {
-    return this.node?this.node.getComputedLayout(): {left:0, right:0, top:0, bottom:0, width:0, height:0}
+  get bounds() {
+    return this.node ? this.node.getComputedLayout() : { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 }
   }
 
-  get backgroundColor () {
-    if (!this._bg) {
-      this._bg = skColorSetArgb(0xFF, Math.floor(Math.random()*255), Math.floor(Math.random()*255), Math.floor(Math.random()*255))
+  get backgroundColor() {
+    if (!this._backgroundColor) {
+      this._backgroundColor = randomColor()
     }
-    return this._bg
+    return this._backgroundColor
   }
 
   // 绝对位置
-  get frame () {
+  get frame() {
     const frame = this.bounds;
     var parent = this.parent
-    while (parent) {
+    if (parent) {
       const pframe = parent.frame
       frame.left += pframe.left
       frame.right -= pframe.right
       frame.top += pframe.top
       frame.bottom -= pframe.bottom
-      parent = parent.parent
     }
-    
+
     return frame
   }
 
-  append (parentNode, parent) {
-    const {children, child, style, text} = this
-    this.rid = rid ++
-    const node = Node.create()
-    node.setDisplay(yoga.DISPLAY_FLEX)
-    node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+  append(parentNode, parent) {
+    const { children, child, style } = this
+    this.rid = rid++
+    this.zIndex = parent.zIndex + 1
+    let node = this.node
+    if (!node) {
+      node = Node.create()
+      node.setDisplay(yoga.DISPLAY_FLEX)
+      node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+  
+      const index = parentNode.getChildCount()
+      parentNode.insertChild(node, index)
+      this.node = node
+      this.parent = parent
 
-    var setter = {}
-    if ('height' in style) {
-      setter['height'] = style['height']
-      node.setHeight(style['height'])
-    }
-    if ('width' in style) {
-      setter['width'] = style['width']
-      node.setWidth(style['width'])
-    }
-    if ('flex' in style) {
-      setter['flex'] = style['flex']
-      node.setFlex(style['flex'])
-    }
-    if ('padding' in style) {
-      setter['padding'] = style['padding']
-      node.setPadding(yoga.EDGE_ALL, style['padding'])
-    }
-    if ('paddingTop' in style) {
-      setter['paddingTop'] = style['paddingTop']
-      node.setPadding(yoga.EDGE_TOP, style['paddingTop'])
-    }
-    if ('paddingLeft' in style) {
-      setter['paddingLeft'] = style['paddingLeft']
-      node.setPadding(yoga.EDGE_LEFT, style['paddingLeft'])
-    }
-    if ('paddingRight' in style) {
-      setter['paddingRight'] = style['paddingRight']
-      node.setPadding(yoga.EDGE_RIGHT, style['paddingRight'])
-    }
-    if ('paddingBottom' in style) {
-      setter['paddingBottom'] = style['paddingBottom']
-      node.setPadding(yoga.EDGE_BOTTOM, style['paddingBottom'])
-    }
-    if ('flexDirection' in style) {
-      setter['flexDirection'] = style['flexDirection']
-      node.setFlexDirection(style['flexDirection']== 'row'?yoga.FLEX_DIRECTION_ROW:yoga.FLEX_DIRECTION_COLUMN)
+      console.log(`create Node ${this.constructor.name}[rid${this.rid}｜id${this.id}] => ${parent.constructor.name}[rid${parent.rid}｜id${parent.id}]`)
     }
 
-    const index = parentNode.getChildCount()
-    console.log(node,`${parent.constructor.name}[rid${parent.rid}｜id${parent.id}]`, '->', `${this.constructor.name}[rid${this.rid}｜id${this.id}]`, setter, index)
-    parentNode.insertChild(node, index)
+    const styleCache = this.styleCache || {}
+    let hasChanged = false
+    function updateStyle(key, cb) {
+      if ((key in style) && styleCache[key] != style[key]) {
+        styleCache[key] = style[key]
+        hasChanged = true
+        cb(style[key])
+      }
+    }
 
+    updateStyle('height', (val) => node.setHeight(val))
+    updateStyle('width', (val) => node.setWidth(val))
+    updateStyle('flex', (val) => node.setFlex(val))
+    updateStyle('padding', (val) => node.setPadding(yoga.EDGE_ALL, val))
+    updateStyle('paddingTop', (val) => node.setPadding(yoga.EDGE_TOP, val))
+    updateStyle('paddingBottom', (val) => node.setPadding(yoga.EDGE_BOTTOM, val))
+    updateStyle('paddingLeft', (val) => node.setPadding(yoga.EDGE_LEFT, val))
+    updateStyle('paddingRight', (val) => node.setPadding(yoga.EDGE_RIGHT, val))
+    updateStyle('flexDirection', (val) => node.setFlexDirection(val == 'row' ? yoga.FLEX_DIRECTION_ROW : yoga.FLEX_DIRECTION_COLUMN))
+
+    this.styleCache = styleCache
+    if (hasChanged) {
+      console.log(`update Node ${this.constructor.name}[rid${this.rid}｜id${this.id}]`, styleCache)
+    }
 
     if (children) {
       children.forEach((element, index) => {
@@ -111,23 +134,60 @@ class Div {
     if (child) {
       child.append(node, this)
     }
-    this.node = node
-    this.parent = parent
   }
 
-  render (canvas) {
-    const {children, child} = this
+  findEventTarget(event, p) {
+    const { children, child } = this
+    if (this.userInteractionEnabled && RectContainsPoint(this.frame, p)) {
+      if (!event.target || event.target.zIndex < this.zIndex) {
+        event.target = this
+      }
+    }
+
+    if (children) {
+      children.forEach((element, index) => {
+        element.findEventTarget(event, p)
+      });
+    }
+
+    if (child) {
+      child.findEventTarget(event, p)
+    }
+  }
+
+  onMouseMove(event) {
+    this._backgroundColor = randomColor()
+  }
+
+  onClick(event) {
+    if (this.handlers['onClick']) {
+      this.handlers['onClick'](event)
+    }
+    const k = ' clicked'
+    if (!this.text.includes(k)) {
+      this.text += k
+    }
+    setTimeout(() => {
+      this.text = this.text.replace(k, '')
+    }, 500)
+  }
+
+  draw(canvas) {
+    const { children, child } = this
     // Rect
     const frame = this.frame
     const fill = skPaintNew();
     skPaintSetColor(fill, this.backgroundColor);
     const rect = new skRect({
-        left: frame.left,
-        top: frame.top,
-        right: frame.left+frame.width,
-        bottom: frame.top+frame.height
+      left: frame.left,
+      top: frame.top,
+      right: frame.left + frame.width,
+      bottom: frame.top + frame.height
     });
-    skCanvasDrawRect(canvas, rect, fill);
+    if (this.zIndex <= 2)
+      skCanvasDrawRect(canvas, rect, fill);
+    else
+      skCanvasDrawRoundRect(canvas, rect, 8, 8, fill);
 
     // Text
     const familyName = "Times New Roman";
@@ -138,50 +198,121 @@ class Div {
     skPaintSetTextsize(text, 20.0);
     skPaintSetTypeface(text, typeface);
     const str = `[${this.name}]${this.text}`;
-    skCanvasDrawText(canvas, str, str.length, frame.left+10, frame.top+50, text);
+    skCanvasDrawText(canvas, str, str.length, frame.left + 10, frame.top + 50, text);
 
     // layout
     const text1 = skPaintNew();
     skPaintSetColor(text1, skColorSetArgb(0xFF, 0xEE, 0xEE, 0xEE));
-    skPaintSetTextsize(text1, 14.0);
+    skPaintSetTextsize(text1, 12.0);
     skPaintSetTypeface(text1, typeface);
-    const str1 = `${frame.width}x${frame.height}`;
-    skCanvasDrawText(canvas, str1, str1.length, frame.left+frame.width-100, frame.top+50, text);
+    const str1 = `${this.zIndex} ${frame.width}x${frame.height}`;
+    skCanvasDrawText(canvas, str1, str1.length, frame.left + frame.width - 100, frame.top + 50, text);
 
     if (children) {
       children.forEach((element, index) => {
-        element.render(canvas)
+        element.draw(canvas)
       });
     }
 
     if (child) {
-      child.render(canvas)
+      child.draw(canvas)
     }
   }
 
-  print () {
-    return {name: this.constructor.name, text: this.text, rid: this.rid, id: this.id, frame: this.frame, style: this.style}
+  print() {
+    return { name: this.constructor.name, text: this.text, rid: this.rid, id: this.id, frame: this.frame, style: this.style }
   }
 
-  dump () {
-    return {name: this.constructor.name, text: this.text, rid: this.rid, id: this.id, layout: this.node.getComputedLayout(), frame: this.frame, children: this.children.map(ele => ele.dump()), child: this.child ?this.child.dump():null, style: this.style}
+  dump() {
+    return { name: this.constructor.name, text: this.text, rid: this.rid, id: this.id, layout: this.node.getComputedLayout(), frame: this.frame, children: this.children.map(ele => ele.dump()), child: this.child ? this.child.dump() : null, style: this.style }
+  }
+
+  inspect() {
+    return `${this.constructor.name}[rid${this.rid}｜id${this.id}]${this.text}`
   }
 }
 
-class Section extends Div {}
+class _Block extends Element { }
 
-class Text extends Div {}
+class _Inline extends Element { }
 
-class Header extends Div {}
+class Div extends _Block { }
 
-var root = new Div({
+class Section extends _Block { }
+
+class Text extends _Inline { }
+
+class Header extends _Block { }
+
+class Document extends _Block {
+
+  dispatchMouseEventMove(x, y) {
+    const p = {x, y}
+    const event = new Event('MouseMove', x, y)
+    this.findEventTarget(event, p)
+    if (event.target) {
+      const handlerName = `onMouseMove`
+      if (event.target[handlerName]) {
+        event.target[handlerName](event)
+      }
+    }
+    this.event = event
+  }
+
+  /**
+   * 分发鼠标按下事件
+   */
+  dispatchMouseEventLeftDown() {
+    if (this.event && this.event.target) {
+      this.event.source = this.event.target
+    }
+  }
+
+  /**
+   * 分发鼠标松开事件
+   */
+  dispatchMouseEventLeftUp() {
+    if (this.event.target && this.event.source == this.event.target) {
+      this.event.source = null
+      const handlerName = `onClick`
+      console.log(handlerName, this.event.target)
+      if (this.event.target[handlerName])
+        this.event.target[handlerName](this.event)
+    }
+  }
+
+  buildNodes () {
+    rid = 0
+    noop.rid = 0
+    this.append(root, noop)
+    root.calculateLayout(1280, 720, yoga.DIRECTION_LTR);
+  }
+
+  renderTick (canvas) {
+    this.draw(canvas)
+  }
+
+  dumpJsonFile () {
+    var dump = this.dump()
+
+    const fs = require('fs')
+    fs.writeFileSync('./dom-calc-static.json', JSON.stringify(dump, null, '\t'))
+  }
+}
+
+var noop = new Div({
+  text: 'noop'
+})
+
+var document = new Document({
   style: { flex: 1, },
   children: [
     new Header({
       text: "header",
       style: {
         height: 100,
-        padding: 10
+        padding: 10,
+        paddingRight: 200
       },
       child: new Text({
         style: { flex: 1, },
@@ -202,8 +333,9 @@ var root = new Div({
         }),
         new Div({
           style: {
-            width: 500, 
-            flexDirection: 'row'
+            width: 500,
+            flexDirection: 'row',
+            paddingTop: 100
           },
           text: "2",
           children: [
@@ -212,10 +344,13 @@ var root = new Div({
               style: {
                 width: 200,
               },
+              onClick () {
+                this.style['width'] -= 10
+              }
             }),
             new Div({
               text: "2-2",
-              style: { flex: 1, },
+              style: { flex: 1, }
             })
           ]
         }),
@@ -228,23 +363,26 @@ var root = new Div({
     new Div({
       text: 'Footer',
       style: {
+        flexDirection: 'row',
         height: 150
       },
+      child: new Div({
+        text: '3-0',
+        style: {
+          flex: 1
+        },
+      }),
+      onClick () {
+        this.addChild(new Div({
+          text: '3-'+(this.children.length+1),
+          style: {
+            width: 250
+          },
+        }))
+      }
     })
   ]
 })
 
-var noop = new Div({
-  text: 'noop'
-})
-noop.rid = 0
-root.append(document, noop)
 
-document.calculateLayout(1280, 720, yoga.DIRECTION_LTR);
-
-var dump = root.dump()
-
-const fs = require('fs')
-fs.writeFileSync('./dom-calc-static.json', JSON.stringify(dump, null, '\t'))
-
-module.exports = root
+module.exports = document
