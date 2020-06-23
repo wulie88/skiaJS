@@ -18,7 +18,7 @@ var document = new Document({
       },
       child: new Text({
         style: { flex: 1, },
-        text: "Logo中文",
+        text: "Logo",
       })
     }),
     new Section({

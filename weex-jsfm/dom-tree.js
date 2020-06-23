@@ -2,13 +2,10 @@
 
 // ------ layout ------
 const yoga = require('yoga-layout')
+const {document, desc2element} = require('./render-tree')
 const {Node} = yoga
 
-const screenWidth = 750, screenHeight = 1334
-const document = Node.create();
-document.setWidth(screenWidth);
-document.setHeight(screenHeight);
-document.setJustifyContent(yoga.JUSTIFY_CENTER);
+const descMap = {}
 
 // should share with precompiler.
 const metaMap = {
@@ -128,15 +125,12 @@ const fs = require('fs')
 let root = {
   ref: '_root',
   children: [],
-  node: document
+  element: document
 }
+descMap[root['ref']] = root
 
-function findParentNode(parentid, parent) {
-  if (parent.ref == parentid) {
-    return parent
-  }
-
-  return parent.children.find(node => findParentNode(parentid, node))
+function findParentDesc(refid) {
+  return descMap[refid]
 }
 
 function insertFragment(fragment, parent) {
@@ -150,23 +144,31 @@ function insertFragment(fragment, parent) {
     parent.children = []
   }
 
-  var node = { parentid: parent.ref, ...fragment }
-  parent.children.push(node)
-  desc2child(node, parent)
+  var desc = { parentid: parent.ref, ...fragment }
+  parent.children.push(desc)
+  desc2element(desc, parent)
+  descMap[desc['ref']] = desc
 
   // 2 insert children
   // reassign
-  parent = node
+  parent = desc
   children.forEach(fragment => insertFragment(fragment, parent))
 }
 
-function buildElementTree(parentid, info) {
-  // console.log('buildElementTree', parentid, info)
-  var parent = findParentNode(parentid, root)
+function buildDescTree(refid, info) {
+  // console.log('buildElementTree', refid, info)
+  var parent = findParentDesc(refid, root)
   if (!parent) {
     throw new Error('Not find parent')
   }
   insertFragment(info, parent)
+}
+
+function updateDescAttrs(refid, info) {
+  const desc = findParentDesc(refid)
+  if (info['value']) {
+    desc.element.text = info['value']
+  }
 }
 
 function dumpJsonFile() {
@@ -177,7 +179,8 @@ function dumpDom() {
 }
 
 tree = {
-  buildElementTree,
+  buildDescTree,
+  updateDescAttrs,
   dumpJsonFile
 }
 module.exports = tree

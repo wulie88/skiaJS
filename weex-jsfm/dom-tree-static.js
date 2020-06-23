@@ -10,6 +10,24 @@ function randomColor() {
   return skColorSetArgb(0xFF, Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255))
 }
 
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
 class Event {
   constructor (name, x, y) {
     this.name = name
@@ -20,14 +38,14 @@ class Event {
 }
 
 const root = Node.create();
-root.setWidth(1280);
-root.setHeight(720);
+root.setWidth(750);
+root.setHeight(1136);
 root.setDisplay(yoga.DISPLAY_FLEX)
 root.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
 
 var rid = 1, id = 1
 class Element {
-  constructor(options) {
+  constructor(options, eventProxy) {
     const { children, child, style, text } = options
     this.id = id++
     this.zIndex = 0 // 视图层次
@@ -36,10 +54,17 @@ class Element {
     this.child = child
     this.text = text || ""
     this.handlers = {}
+    this.ref = options.ref
     this.userInteractionEnabled = false
     if ('onClick' in options) {
       this.userInteractionEnabled = true
       this.handlers['onClick'] = options['onClick'].bind(this)
+    }
+    if (options.event && options.event.indexOf('click') > -1) {
+      this.userInteractionEnabled = true
+      this.handlers['onClick'] = () => {
+        eventProxy.publish('click', this)
+      }
     }
     console.log(`constructor ${this.constructor.name}[id${this.id}] ${text}`)
   }
@@ -118,7 +143,13 @@ class Element {
     updateStyle('paddingBottom', (val) => node.setPadding(yoga.EDGE_BOTTOM, val))
     updateStyle('paddingLeft', (val) => node.setPadding(yoga.EDGE_LEFT, val))
     updateStyle('paddingRight', (val) => node.setPadding(yoga.EDGE_RIGHT, val))
+    updateStyle('margin', (val) => node.setMargin(yoga.EDGE_ALL, val))
+    updateStyle('marginTop', (val) => node.setMargin(yoga.EDGE_TOP, val))
+    updateStyle('marginBottom', (val) => node.setMargin(yoga.EDGE_BOTTOM, val))
+    updateStyle('marginLeft', (val) => node.setMargin(yoga.EDGE_LEFT, val))
+    updateStyle('marginRight', (val) => node.setMargin(yoga.EDGE_RIGHT, val))
     updateStyle('flexDirection', (val) => node.setFlexDirection(val == 'row' ? yoga.FLEX_DIRECTION_ROW : yoga.FLEX_DIRECTION_COLUMN))
+    updateStyle('backgroundColor', (val) => )
 
     this.styleCache = styleCache
     if (hasChanged) {
@@ -197,7 +228,7 @@ class Element {
     skPaintSetColor(text, skColorSetArgb(0xFF, 0xFF, 0xFF, 0xFF));
     skPaintSetTextsize(text, 20.0);
     skPaintSetTypeface(text, typeface);
-    const str = `[${this.name}]${this.text}`;
+    const str = `${this.text}`;
     skCanvasDrawText(canvas, str, str.length, frame.left + 10, frame.top + 50, text);
 
     // layout
@@ -205,8 +236,8 @@ class Element {
     skPaintSetColor(text1, skColorSetArgb(0xFF, 0xEE, 0xEE, 0xEE));
     skPaintSetTextsize(text1, 12.0);
     skPaintSetTypeface(text1, typeface);
-    const str1 = `${this.zIndex} ${frame.width}x${frame.height}`;
-    skCanvasDrawText(canvas, str1, str1.length, frame.left + frame.width - 100, frame.top + 50, text);
+    const str1 = `${this.name} ${this.zIndex} ${frame.width}x${frame.height}`;
+    skCanvasDrawText(canvas, str1, str1.length, frame.left + frame.width - 140, frame.top + 50, text);
 
     if (children) {
       children.forEach((element, index) => {
@@ -285,7 +316,7 @@ class Document extends _Block {
     rid = 0
     noop.rid = 0
     this.append(root, noop)
-    root.calculateLayout(1280, 720, yoga.DIRECTION_LTR);
+    root.calculateLayout(750, 1136, yoga.DIRECTION_LTR);
   }
 
   renderTick (canvas) {

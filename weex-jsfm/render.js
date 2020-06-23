@@ -5,6 +5,8 @@ const glfw = require('glfw-n-api');
 Object.assign(global, glfw);
 Object.assign(global, skia);
 
+module.exports = function (document) {
+
 function error_callback(error, description) {
   console.log(arguments);
 }
@@ -32,8 +34,8 @@ function mouse_button_callback(window, button, action, mods) {
   }
 }
 
-const kWidth = 1280;
-const kHeight = 720;
+const kWidth = 750;
+const kHeight = 1136;
 
 let window;
 glfwSetErrorCallback(error_callback);
@@ -77,8 +79,6 @@ glfwSetCursorPosCallback(window, cursor_position_callback);
 glfwSetMouseButtonCallback(window, mouse_button_callback);
 // glfwSetCursorEnterCallback(window, cursor_enter_callback);
 const canvas = skSurfaceGetCanvas(surface);
-
-const document = require('./jsx')
 
 function draw() {
   skCanvasSave(canvas);
@@ -129,3 +129,5 @@ function drawLoop() {
   glfwPollEvents();
 }
 drawLoop();
+
+}

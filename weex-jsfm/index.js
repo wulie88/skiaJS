@@ -1,5 +1,10 @@
 const jsfm = require('./weex-js-framework-dev.js');
 const tree = require('./dom-tree')
+const {document, eventProxy} = require('./render-tree')
+const render = require('./render')
+const fs = require('fs')
+const vm = require('vm')
+const path = require('path')
 
 // steps: 
 // getJSFMVersion registerComponents createInstanceContext __WEEX_CALL_JAVASCRIPT__("0", {method: 'fireEvent', args: ["_root", 'viewappear]})
@@ -15,15 +20,27 @@ const context = jsfm.createInstanceContext('4', {
   }
 }, null)
 
-console.log('jsfm', jsfm)
+eventProxy.sub(context, '4')
+
+// console.log('jsfm', jsfm, 'context', context)
 global.callNative = function (instanceId, [{method, module, args}]) {
-  // this.console.log('callNative', method, module, args)
   if ('addElement' === method) {
-    tree.buildElementTree(...args)
+    tree.buildDescTree(...args)
+  } else if ('updateAttrs' === method) {
+    tree.updateDescAttrs(...args)
+    // this.console.log('callNative', method, module, args)
+  } else {
+    this.console.log('callNative', method, module, args)
   }
 }
-global = Object.assign(global, context)
-require('./app.weex.js')
+vm.createContext(context); // Contextify the object.
+// global = Object.assign(global, context)
+vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-huarong.js')), context);
+
 
 // console.log(root)
 tree.dumpJsonFile()
+
+render(document)
+
+// __WEEX_CALL_JAVASCRIPT__
