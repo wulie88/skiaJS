@@ -62,8 +62,8 @@ class Element {
     }
     if (options.event && options.event.indexOf('click') > -1) {
       this.userInteractionEnabled = true
-      this.handlers['onClick'] = () => {
-        eventProxy.publish('click', this)
+      this.handlers['onClick'] = (event) => {
+        eventProxy.publish('click', this, event)
       }
     }
     console.log(`constructor ${this.constructor.name}[id${this.id}] ${text}`)
@@ -90,6 +90,13 @@ class Element {
       this._backgroundColor = randomColor()
     }
     return this._backgroundColor
+  }
+
+  get textColor() {
+    if (!this._textColor) {
+      this._textColor = randomColor()
+    }
+    return this._textColor
   }
 
   // 绝对位置
@@ -149,7 +156,14 @@ class Element {
     updateStyle('marginLeft', (val) => node.setMargin(yoga.EDGE_LEFT, val))
     updateStyle('marginRight', (val) => node.setMargin(yoga.EDGE_RIGHT, val))
     updateStyle('flexDirection', (val) => node.setFlexDirection(val == 'row' ? yoga.FLEX_DIRECTION_ROW : yoga.FLEX_DIRECTION_COLUMN))
-    updateStyle('backgroundColor', (val) => )
+    updateStyle('backgroundColor', (val) => {
+      const {r, g, b} = hexToRgb(val)
+      this._backgroundColor = skColorSetArgb(0xFF, r, g, b)
+    })
+    updateStyle('color', (val) => {
+      const {r, g, b} = hexToRgb(val)
+      this._textColor = skColorSetArgb(0xFF, r, g, b)
+    })
 
     this.styleCache = styleCache
     if (hasChanged) {
@@ -187,7 +201,7 @@ class Element {
   }
 
   onMouseMove(event) {
-    this._backgroundColor = randomColor()
+    // this._backgroundColor = randomColor()
   }
 
   onClick(event) {
@@ -225,7 +239,7 @@ class Element {
     const textStyle = skFontstyleNew(400, 1, enums.UPRIGHT_SK_FONT_STYLE_SLANT);
     const typeface = skTypefaceCreateFromNameWithFontStyle(familyName, textStyle);
     const text = skPaintNew();
-    skPaintSetColor(text, skColorSetArgb(0xFF, 0xFF, 0xFF, 0xFF));
+    skPaintSetColor(text, this.textColor);
     skPaintSetTextsize(text, 20.0);
     skPaintSetTypeface(text, typeface);
     const str = `${this.text}`;
