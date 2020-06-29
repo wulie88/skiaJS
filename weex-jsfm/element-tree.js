@@ -1,10 +1,15 @@
+/**
+ * render tree
+ * collection of Element
+ */
+
 const {
   Document,
   Text,
   Header,
   Section,
   Div
-} = require('./dom-tree-static')
+} = require('./element')
 
 class Figure extends Div {}
 class P extends Div {}

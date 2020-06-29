@@ -1,7 +1,7 @@
 const jsfm = require('./weex-js-framework-dev.js');
-const tree = require('./dom-tree')
-const {document, eventProxy} = require('./render-tree')
-const render = require('./render')
+const tree = require('./desc-tree')
+const {document, eventProxy} = require('./element-tree')
+const renderer = require('./renderer')
 const fs = require('fs')
 const vm = require('vm')
 const path = require('path')
@@ -35,12 +35,12 @@ global.callNative = function (instanceId, [{method, module, args}]) {
 }
 vm.createContext(context); // Contextify the object.
 // global = Object.assign(global, context)
-vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-huarong.js')), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-nesting.js')), context);
 
 
 // console.log(root)
 tree.dumpJsonFile()
 
-render(document)
+renderer(document)
 
 // __WEEX_CALL_JAVASCRIPT__

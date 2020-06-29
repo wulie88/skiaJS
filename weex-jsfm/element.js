@@ -1,32 +1,11 @@
 const yoga = require('yoga-layout')
+const {
+  str2color,
+  randomColor,
+  transformJustifyContent,
+  transformAlignItems
+} = require('./element-helpper')
 const { Node } = yoga
-
-function RectContainsPoint(rect, point) {
-  return point.x > rect.left && point.x < rect.left + rect.width
-    && point.y > rect.top && point.y < rect.top + rect.height
-}
-
-function randomColor() {
-  return skColorSetArgb(0xFF, Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255))
-}
-
-function componentToHex(c) {
-  var hex = c.toString(16);
-  return hex.length == 1 ? "0" + hex : hex;
-}
-
-function hexToRgb(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
-}
-
-function rgbToHex(r, g, b) {
-  return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
 
 class Event {
   constructor (name, x, y) {
@@ -142,6 +121,7 @@ class Element {
       }
     }
 
+    // -- layout --
     updateStyle('height', (val) => node.setHeight(val))
     updateStyle('width', (val) => node.setWidth(val))
     updateStyle('flex', (val) => node.setFlex(val))
@@ -156,13 +136,25 @@ class Element {
     updateStyle('marginLeft', (val) => node.setMargin(yoga.EDGE_LEFT, val))
     updateStyle('marginRight', (val) => node.setMargin(yoga.EDGE_RIGHT, val))
     updateStyle('flexDirection', (val) => node.setFlexDirection(val == 'row' ? yoga.FLEX_DIRECTION_ROW : yoga.FLEX_DIRECTION_COLUMN))
+    updateStyle('justifyContent', (val) => node.setJustifyContent(transformJustifyContent(val)))
+    updateStyle('alignItems', (val) => node.setAlignItems(transformAlignItems(val)))
+    updateStyle('borderWidth', (val) => node.setBorder(val))
+    updateStyle('position', (val) => node.setFlexDirection(val == 'absolute' ? yoga.POSITION_TYPE_ABSOLUTE : yoga.POSITION_TYPE_RELATIVE))
+    updateStyle('top', (val) => node.setPosition(yoga.EDGE_TOP, val))
+    updateStyle('bottom', (val) => node.setPosition(yoga.EDGE_BOTTOM, val))
+    updateStyle('left', (val) => node.setPosition(yoga.EDGE_LEFT, val))
+    updateStyle('right', (val) => node.setPosition(yoga.EDGE_RIGHT, val))
+    updateStyle('display', (val) => node.setDisplay(val == 'none' ? yoga.DISPLAY_NONE : yoga.DISPLAY_FLEX))
+
+    // -- style --
     updateStyle('backgroundColor', (val) => {
-      const {r, g, b} = hexToRgb(val)
-      this._backgroundColor = skColorSetArgb(0xFF, r, g, b)
+      this._backgroundColor = str2color(val)
     })
     updateStyle('color', (val) => {
-      const {r, g, b} = hexToRgb(val)
-      this._textColor = skColorSetArgb(0xFF, r, g, b)
+      this._textColor = str2color(val)
+    })
+    updateStyle('borderRadius', (val) => {
+      this._borderRadius = val
     })
 
     this.styleCache = styleCache
@@ -183,7 +175,7 @@ class Element {
 
   findEventTarget(event, p) {
     const { children, child } = this
-    if (this.userInteractionEnabled && RectContainsPoint(this.frame, p)) {
+    if (this.userInteractionEnabled && helpper.RectContainsPoint(this.frame, p)) {
       if (!event.target || event.target.zIndex < this.zIndex) {
         event.target = this
       }
@@ -232,7 +224,7 @@ class Element {
     if (this.zIndex <= 2)
       skCanvasDrawRect(canvas, rect, fill);
     else
-      skCanvasDrawRoundRect(canvas, rect, 8, 8, fill);
+      skCanvasDrawRoundRect(canvas, rect, this._borderRadius || 8, this._borderRadius || 8, fill);
 
     // Text
     const familyName = "Times New Roman";
@@ -341,7 +333,7 @@ class Document extends _Block {
     var dump = this.dump()
 
     const fs = require('fs')
-    fs.writeFileSync('./dom-calc-static.json', JSON.stringify(dump, null, '\t'))
+    fs.writeFileSync('./element.json', JSON.stringify(dump, null, '\t'))
   }
 }
 
