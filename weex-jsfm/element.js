@@ -1,5 +1,6 @@
 const yoga = require('yoga-layout')
 const {
+  RectContainsPoint,
   str2color,
   randomColor,
   transformJustifyContent,
@@ -24,8 +25,8 @@ root.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
 
 var rid = 1, id = 1
 class Element {
-  constructor(options, eventProxy) {
-    const { children, child, style, text } = options
+  constructor(desc, eventProxy) {
+    const { ref, children, child, style, text } = desc
     this.id = id++
     this.zIndex = 0 // 视图层次
     this.style = style
@@ -33,19 +34,28 @@ class Element {
     this.child = child
     this.text = text || ""
     this.handlers = {}
-    this.ref = options.ref
+    this.ref = ref
     this.userInteractionEnabled = false
-    if ('onClick' in options) {
+    if ('onClick' in desc) {
       this.userInteractionEnabled = true
       this.handlers['onClick'] = options['onClick'].bind(this)
     }
-    if (options.event && options.event.indexOf('click') > -1) {
+    if (desc.event && desc.event.indexOf('click') > -1) {
       this.userInteractionEnabled = true
       this.handlers['onClick'] = (event) => {
         eventProxy.publish('click', this, event)
       }
     }
-    console.log(`constructor ${this.constructor.name}[id${this.id}] ${text}`)
+    console.log(`constructor ${this.constructor.name}[id${this.id}] ${text}`, style)
+  }
+  
+  update (desc) {
+    if (desc['style']) {
+      this.style = Object.assign(this.style, desc['style'])
+    }
+    if (desc['value']) {
+      this.text = desc['value']
+    }
   }
 
   addChild (child) {
@@ -65,9 +75,6 @@ class Element {
   }
 
   get backgroundColor() {
-    if (!this._backgroundColor) {
-      this._backgroundColor = randomColor()
-    }
     return this._backgroundColor
   }
 
@@ -75,14 +82,19 @@ class Element {
     if (!this._textColor) {
       this._textColor = randomColor()
     }
+
     return this._textColor
+  }
+
+  get isAbsolute() {
+    return this.style && this.style['position'] === 'absolute'
   }
 
   // 绝对位置
   get frame() {
     const frame = this.bounds;
     var parent = this.parent
-    if (parent) {
+    if (parent && !parent.isAbsolute) {
       const pframe = parent.frame
       frame.left += pframe.left
       frame.right -= pframe.right
@@ -138,7 +150,7 @@ class Element {
     updateStyle('flexDirection', (val) => node.setFlexDirection(val == 'row' ? yoga.FLEX_DIRECTION_ROW : yoga.FLEX_DIRECTION_COLUMN))
     updateStyle('justifyContent', (val) => node.setJustifyContent(transformJustifyContent(val)))
     updateStyle('alignItems', (val) => node.setAlignItems(transformAlignItems(val)))
-    updateStyle('borderWidth', (val) => node.setBorder(val))
+    updateStyle('borderWidth', (val) => node.setBorder(yoga.EDGE_ALL, val))
     updateStyle('position', (val) => node.setFlexDirection(val == 'absolute' ? yoga.POSITION_TYPE_ABSOLUTE : yoga.POSITION_TYPE_RELATIVE))
     updateStyle('top', (val) => node.setPosition(yoga.EDGE_TOP, val))
     updateStyle('bottom', (val) => node.setPosition(yoga.EDGE_BOTTOM, val))
@@ -175,7 +187,7 @@ class Element {
 
   findEventTarget(event, p) {
     const { children, child } = this
-    if (this.userInteractionEnabled && helpper.RectContainsPoint(this.frame, p)) {
+    if (this.userInteractionEnabled && RectContainsPoint(this.frame, p)) {
       if (!event.target || event.target.zIndex < this.zIndex) {
         event.target = this
       }
@@ -213,18 +225,20 @@ class Element {
     const { children, child } = this
     // Rect
     const frame = this.frame
-    const fill = skPaintNew();
-    skPaintSetColor(fill, this.backgroundColor);
-    const rect = new skRect({
-      left: frame.left,
-      top: frame.top,
-      right: frame.left + frame.width,
-      bottom: frame.top + frame.height
-    });
-    if (this.zIndex <= 2)
-      skCanvasDrawRect(canvas, rect, fill);
-    else
-      skCanvasDrawRoundRect(canvas, rect, this._borderRadius || 8, this._borderRadius || 8, fill);
+    if (this.backgroundColor) {
+      const fill = skPaintNew();
+      skPaintSetColor(fill, this.backgroundColor);
+      const rect = new skRect({
+        left: frame.left,
+        top: frame.top,
+        right: frame.left + frame.width,
+        bottom: frame.top + frame.height
+      });
+      if (this.zIndex <= 2)
+        skCanvasDrawRect(canvas, rect, fill);
+      else
+        skCanvasDrawRoundRect(canvas, rect, this._borderRadius || 8, this._borderRadius || 8, fill);
+    }
 
     // Text
     const familyName = "Times New Roman";
@@ -323,6 +337,8 @@ class Document extends _Block {
     noop.rid = 0
     this.append(root, noop)
     root.calculateLayout(750, 1136, yoga.DIRECTION_LTR);
+
+    // this.dumpJsonFile()
   }
 
   renderTick (canvas) {

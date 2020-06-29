@@ -5,6 +5,11 @@ const renderer = require('./renderer')
 const fs = require('fs')
 const vm = require('vm')
 const path = require('path')
+const skia = require('../generated/interface');
+const glfw = require('glfw-n-api');
+
+Object.assign(global, glfw);
+Object.assign(global, skia);
 
 // steps: 
 // getJSFMVersion registerComponents createInstanceContext __WEEX_CALL_JAVASCRIPT__("0", {method: 'fireEvent', args: ["_root", 'viewappear]})
@@ -24,7 +29,9 @@ eventProxy.sub(context, '4')
 
 // console.log('jsfm', jsfm, 'context', context)
 global.callNative = function (instanceId, [{method, module, args}]) {
-  if ('addElement' === method) {
+  if ('createBody' === method) {
+    tree.buildDescTree('_', ...args)
+  } else if ('addElement' === method) {
     tree.buildDescTree(...args)
   } else if ('updateAttrs' === method) {
     tree.updateDescAttrs(...args)
@@ -35,12 +42,13 @@ global.callNative = function (instanceId, [{method, module, args}]) {
 }
 vm.createContext(context); // Contextify the object.
 // global = Object.assign(global, context)
-vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-nesting.js')), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-position.js')), context);
 
 
 // console.log(root)
-tree.dumpJsonFile()
 
 renderer(document)
+
+tree.dumpJsonFile()
 
 // __WEEX_CALL_JAVASCRIPT__

@@ -8,13 +8,13 @@ const descMap = {}
 const fs = require('fs')
 
 let root = {
-  ref: '_root',
+  ref: '_',
   children: [],
   element: document
 }
 descMap[root['ref']] = root
 
-function findParentDesc(refid) {
+function findDesc(refid) {
   return descMap[refid]
 }
 
@@ -29,7 +29,7 @@ function insertFragment(fragment, parent) {
     parent.children = []
   }
 
-  var desc = { parentid: parent.ref, ...fragment }
+  let desc = { parentid: parent.ref, ...fragment }
   parent.children.push(desc)
   desc2element(desc, parent)
   descMap[desc['ref']] = desc
@@ -40,24 +40,22 @@ function insertFragment(fragment, parent) {
   children.forEach(fragment => insertFragment(fragment, parent))
 }
 
-function buildDescTree(refid, info) {
-  // console.log('buildElementTree', refid, info)
-  var parent = findParentDesc(refid, root)
+function buildDescTree(parentid, info) {
+  // console.log('buildElementTree', parentid, info)
+  var parent = findDesc(parentid, root)
   if (!parent) {
-    throw new Error('Not find parent')
+    throw new Error(`Not find parent - ${parentid}`)
   }
   insertFragment(info, parent)
 }
 
 function updateDescAttrs(refid, info) {
-  const desc = findParentDesc(refid)
-  if (info['value']) {
-    desc.element.text = info['value']
-  }
+  const desc = findDesc(refid)
+  desc.element.update(info)
 }
 
 function dumpJsonFile() {
-  fs.writeFileSync('tree.json', JSON.stringify(root, null, '\t'))
+  fs.writeFileSync('desc-tree.json', JSON.stringify(root, null, '\t'))
 }
 
 function dumpDom() {

@@ -71,7 +71,7 @@ function transformTag (tag) {
 }
 
 function desc2element(desc, parentDesc) {
-  console.log('desc', desc, 'parentDesc', parentDesc)
+  // console.log('desc', desc, 'parentDesc', parentDesc)
 
   if ('_root' == parentDesc.ref) {
     parentDesc.element = document
@@ -79,12 +79,17 @@ function desc2element(desc, parentDesc) {
 
   const tag = transformTag(desc['type'])
   const element = new Div(desc, eventProxy)
+
   desc.element = element
   parentDesc.element.addChild(element)
 }
 
 var document = new Document({
-  style: { flex: 1, },
+  style: {
+    flex: 1,
+    flexDirection: 'column',
+    backgroundColor: '#ffffff',
+  },
 });
 
 module.exports = {

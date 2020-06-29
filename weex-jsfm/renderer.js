@@ -1,9 +1,5 @@
 const { performance } = require('perf_hooks');
-const skia = require('../generated/interface');
 const glfw = require('glfw-n-api');
-
-Object.assign(global, glfw);
-Object.assign(global, skia);
 
 module.exports = function (document) {
 
@@ -89,6 +85,7 @@ function draw() {
   
   document.buildNodes()
   document.renderTick(canvas)
+  document.dumpJsonFile()
 
   skCanvasRestore(canvas);
 }
