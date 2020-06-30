@@ -1,4 +1,10 @@
-const document = require('./jsx')
-const render = require('./render')
+const document = require('./jsx-position')
+const renderer = require('./renderer')
 
-render(document)
+const skia = require('../generated/interface');
+const glfw = require('glfw-n-api');
+
+Object.assign(global, glfw);
+Object.assign(global, skia);
+
+renderer(document)

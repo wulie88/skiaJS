@@ -85,7 +85,6 @@ function draw() {
   
   document.buildNodes()
   document.renderTick(canvas)
-  document.dumpJsonFile()
 
   skCanvasRestore(canvas);
 }

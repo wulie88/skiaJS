@@ -73,10 +73,6 @@ function transformTag (tag) {
 function desc2element(desc, parentDesc) {
   // console.log('desc', desc, 'parentDesc', parentDesc)
 
-  if ('_root' == parentDesc.ref) {
-    parentDesc.element = document
-  }
-
   const tag = transformTag(desc['type'])
   const element = new Div(desc, eventProxy)
 

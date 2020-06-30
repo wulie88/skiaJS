@@ -17,28 +17,29 @@ class Event {
   }
 }
 
-const root = Node.create();
+const root = Node.createDefault();
 root.setWidth(750);
 root.setHeight(1136);
 root.setDisplay(yoga.DISPLAY_FLEX)
-root.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+// root.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
 
 var rid = 1, id = 1
 class Element {
   constructor(desc, eventProxy) {
-    const { ref, children, child, style, text } = desc
+    const { ref, parentRef, children, child, style, attr, text } = desc
     this.id = id++
     this.zIndex = 0 // 视图层次
     this.style = style
     this.children = children || []
     this.child = child
-    this.text = text || ""
+    this.text = text || (attr && attr.value) || ""
     this.handlers = {}
+    this.parentRef = parentRef
     this.ref = ref
     this.userInteractionEnabled = false
     if ('onClick' in desc) {
       this.userInteractionEnabled = true
-      this.handlers['onClick'] = options['onClick'].bind(this)
+      this.handlers['onClick'] = desc['onClick'].bind(this)
     }
     if (desc.event && desc.event.indexOf('click') > -1) {
       this.userInteractionEnabled = true
@@ -46,7 +47,7 @@ class Element {
         eventProxy.publish('click', this, event)
       }
     }
-    console.log(`constructor ${this.constructor.name}[id${this.id}] ${text}`, style)
+    console.log(`constructor ${this.constructor.name}[id${this.id}] ${this.text}`, style)
   }
   
   update (desc) {
@@ -75,6 +76,10 @@ class Element {
   }
 
   get backgroundColor() {
+    if (!this._backgroundColor) {
+      this._backgroundColor = randomColor()
+    }
+
     return this._backgroundColor
   }
 
@@ -94,7 +99,7 @@ class Element {
   get frame() {
     const frame = this.bounds;
     var parent = this.parent
-    if (parent && !parent.isAbsolute) {
+    if (!this.isAbsolute && parent) {
       const pframe = parent.frame
       frame.left += pframe.left
       frame.right -= pframe.right
@@ -111,9 +116,9 @@ class Element {
     this.zIndex = parent.zIndex + 1
     let node = this.node
     if (!node) {
-      node = Node.create()
+      node = Node.createDefault()
       node.setDisplay(yoga.DISPLAY_FLEX)
-      node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+      // node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
   
       const index = parentNode.getChildCount()
       parentNode.insertChild(node, index)
@@ -249,15 +254,15 @@ class Element {
     skPaintSetTextsize(text, 20.0);
     skPaintSetTypeface(text, typeface);
     const str = `${this.text}`;
-    skCanvasDrawText(canvas, str, str.length, frame.left + 10, frame.top + 50, text);
+    skCanvasDrawText(canvas, str, str.length, frame.left + 10, frame.top + 10, text);
 
     // layout
     const text1 = skPaintNew();
     skPaintSetColor(text1, skColorSetArgb(0xFF, 0xEE, 0xEE, 0xEE));
     skPaintSetTextsize(text1, 12.0);
     skPaintSetTypeface(text1, typeface);
-    const str1 = `${this.name} ${this.zIndex} ${frame.width}x${frame.height}`;
-    skCanvasDrawText(canvas, str1, str1.length, frame.left + frame.width - 140, frame.top + 50, text);
+    const str1 = `${this.name} ${this.zIndex} x:${frame.left} y:${frame.top} ${frame.width}x${frame.height}`;
+    skCanvasDrawText(canvas, str1, str1.length, frame.left + frame.width - 180, frame.top + 50, text);
 
     if (children) {
       children.forEach((element, index) => {
@@ -275,7 +280,7 @@ class Element {
   }
 
   dump() {
-    return { name: this.constructor.name, text: this.text, rid: this.rid, id: this.id, layout: this.node.getComputedLayout(), frame: this.frame, children: this.children.map(ele => ele.dump()), child: this.child ? this.child.dump() : null, style: this.style }
+    return { name: this.constructor.name, ref: this.ref, parentRef: this.parentRef, text: this.text, rid: this.rid, id: this.id, style: this.style, layout: this.node.getComputedLayout(), frame: this.frame, children: this.children.map(ele => ele.dump()), child: this.child ? this.child.dump() : null }
   }
 
   inspect() {
@@ -338,7 +343,7 @@ class Document extends _Block {
     this.append(root, noop)
     root.calculateLayout(750, 1136, yoga.DIRECTION_LTR);
 
-    // this.dumpJsonFile()
+    this.dumpJsonFile()
   }
 
   renderTick (canvas) {

@@ -19,7 +19,7 @@ function findDesc(refid) {
 }
 
 function insertFragment(fragment, parent) {
-  // console.log('fragment->', fragment, 'parent->', parent)
+  console.log('fragment->', fragment, 'parent->', parent)
   // clean children
   const children = fragment.children || []
   delete fragment.children
@@ -29,7 +29,7 @@ function insertFragment(fragment, parent) {
     parent.children = []
   }
 
-  let desc = { parentid: parent.ref, ...fragment }
+  let desc = { parentRef: parent.ref, ...fragment }
   parent.children.push(desc)
   desc2element(desc, parent)
   descMap[desc['ref']] = desc
@@ -40,17 +40,17 @@ function insertFragment(fragment, parent) {
   children.forEach(fragment => insertFragment(fragment, parent))
 }
 
-function buildDescTree(parentid, info) {
-  // console.log('buildElementTree', parentid, info)
-  var parent = findDesc(parentid, root)
+function buildDescTree(parentRef, info) {
+  // console.log('buildElementTree', parentRef, info)
+  var parent = findDesc(parentRef)
   if (!parent) {
-    throw new Error(`Not find parent - ${parentid}`)
+    throw new Error(`Not find parent - ${parentRef}`)
   }
   insertFragment(info, parent)
 }
 
-function updateDescAttrs(refid, info) {
-  const desc = findDesc(refid)
+function updateDescAttrs(ref, info) {
+  const desc = findDesc(ref)
   desc.element.update(info)
 }
 

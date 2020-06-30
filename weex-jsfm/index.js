@@ -49,6 +49,6 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-position.js')),
 
 renderer(document)
 
-tree.dumpJsonFile()
+// tree.dumpJsonFile()
 
 // __WEEX_CALL_JAVASCRIPT__

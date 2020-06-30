@@ -4,7 +4,7 @@ const {
   Header,
   Section,
   Div
-} = require('./dom-tree-static')
+} = require('./element')
 
 var document = new Document({
   style: { flex: 1, },
