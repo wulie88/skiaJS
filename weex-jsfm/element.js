@@ -48,6 +48,7 @@ class Element {
       }
     }
     console.log(`constructor ${this.constructor.name}[id${this.id}] ${this.text}`, style)
+    this._paddingTop = this._paddingRight = this._paddingBottom = this._paddingLeft = 0
   }
   
   update (desc) {
@@ -77,7 +78,7 @@ class Element {
 
   get backgroundColor() {
     if (!this._backgroundColor) {
-      this._backgroundColor = randomColor()
+      // this._backgroundColor = randomColor()
     }
 
     return this._backgroundColor
@@ -118,7 +119,8 @@ class Element {
     if (!node) {
       node = Node.createDefault()
       node.setDisplay(yoga.DISPLAY_FLEX)
-      // node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+      node.setFlexDirection(yoga.FLEX_DIRECTION_COLUMN)
+      // node.setFlexDirection(yoga.POSITION_TYPE_RELATIVE)
   
       const index = parentNode.getChildCount()
       parentNode.insertChild(node, index)
@@ -130,11 +132,12 @@ class Element {
 
     const styleCache = this.styleCache || {}
     let hasChanged = false
-    function updateStyle(key, cb) {
+    function updateStyle(key, cb, transform) {
       if ((key in style) && styleCache[key] != style[key]) {
+        const val = transform?transform(style[key]):style[key]
         styleCache[key] = style[key]
         hasChanged = true
-        cb(style[key])
+        cb(val)
       }
     }
 
@@ -142,11 +145,26 @@ class Element {
     updateStyle('height', (val) => node.setHeight(val))
     updateStyle('width', (val) => node.setWidth(val))
     updateStyle('flex', (val) => node.setFlex(val))
-    updateStyle('padding', (val) => node.setPadding(yoga.EDGE_ALL, val))
-    updateStyle('paddingTop', (val) => node.setPadding(yoga.EDGE_TOP, val))
-    updateStyle('paddingBottom', (val) => node.setPadding(yoga.EDGE_BOTTOM, val))
-    updateStyle('paddingLeft', (val) => node.setPadding(yoga.EDGE_LEFT, val))
-    updateStyle('paddingRight', (val) => node.setPadding(yoga.EDGE_RIGHT, val))
+    updateStyle('padding', (val) => {
+      node.setPadding(yoga.EDGE_ALL, val)
+      this._paddingTop = this._paddingRight = this._paddingBottom = this._paddingLeft = val
+    }, parseInt)
+    updateStyle('paddingTop', (val) => {
+      node.setPadding(yoga.EDGE_TOP, val)
+      this._paddingTop = val
+    }, parseInt)
+    updateStyle('paddingBottom', (val) => {
+      node.setPadding(yoga.EDGE_BOTTOM, val)
+      this._paddingBottom = val
+    }, parseInt)
+    updateStyle('paddingLeft', (val) => {
+      node.setPadding(yoga.EDGE_LEFT, val)
+      this._paddingLeft = val
+    }, parseInt)
+    updateStyle('paddingRight', (val) => {
+      node.setPadding(yoga.EDGE_RIGHT, val)
+      this._paddingRight = val
+    }, parseInt)
     updateStyle('margin', (val) => node.setMargin(yoga.EDGE_ALL, val))
     updateStyle('marginTop', (val) => node.setMargin(yoga.EDGE_TOP, val))
     updateStyle('marginBottom', (val) => node.setMargin(yoga.EDGE_BOTTOM, val))
@@ -170,13 +188,16 @@ class Element {
     updateStyle('color', (val) => {
       this._textColor = str2color(val)
     })
+    updateStyle('fontSize:', (val) => {
+      this._fontSize = val
+    })
     updateStyle('borderRadius', (val) => {
       this._borderRadius = val
     })
 
     this.styleCache = styleCache
     if (hasChanged) {
-      console.log(`update Node ${this.constructor.name}[rid${this.rid}｜id${this.id}]`, styleCache)
+      console.log(`update Node ${this.text} ${this.constructor.name}[rid${this.rid}｜id${this.id}]`, styleCache)
     }
 
     if (children) {
@@ -226,12 +247,41 @@ class Element {
     }, 500)
   }
 
+  drawDebug(canvas) {
+    const { children, child } = this
+    // Rect
+    const frame = this.frame
+
+    // Text
+    const familyName = "Hei";
+    const textStyle = skFontstyleNew(400, 1, enums.UPRIGHT_SK_FONT_STYLE_SLANT);
+    const typeface = skTypefaceCreateFromNameWithFontStyle(familyName, textStyle);
+    const text = skPaintNew();
+    skPaintSetAntialias(text, true)
+    skPaintSetColor(text, skColorSetArgb(240, 0x32, 0x30, 0x4F));
+    skPaintSetTextsize(text, 12);
+    skPaintSetTypeface(text, typeface);
+    const str = `z:${this.zIndex} x:${frame.left} y:${frame.top} ${frame.width}x${frame.height}`;
+    skCanvasDrawText(canvas, str, str.length, frame.left + 10, frame.top + 10, text);
+
+    if (children) {
+      children.forEach((element, index) => {
+        element.drawDebug(canvas)
+      });
+    }
+
+    if (child) {
+      child.drawDebug(canvas)
+    }
+  }
+
   draw(canvas) {
     const { children, child } = this
     // Rect
     const frame = this.frame
     if (this.backgroundColor) {
       const fill = skPaintNew();
+      skPaintSetAntialias(fill, true)
       skPaintSetColor(fill, this.backgroundColor);
       const rect = new skRect({
         left: frame.left,
@@ -246,23 +296,16 @@ class Element {
     }
 
     // Text
-    const familyName = "Times New Roman";
+    const familyName = "Hei";
     const textStyle = skFontstyleNew(400, 1, enums.UPRIGHT_SK_FONT_STYLE_SLANT);
     const typeface = skTypefaceCreateFromNameWithFontStyle(familyName, textStyle);
     const text = skPaintNew();
+    skPaintSetAntialias(text, true)
     skPaintSetColor(text, this.textColor);
-    skPaintSetTextsize(text, 20.0);
+    skPaintSetTextsize(text, this._fontSize || 20);
     skPaintSetTypeface(text, typeface);
     const str = `${this.text}`;
-    skCanvasDrawText(canvas, str, str.length, frame.left + 10, frame.top + 10, text);
-
-    // layout
-    const text1 = skPaintNew();
-    skPaintSetColor(text1, skColorSetArgb(0xFF, 0xEE, 0xEE, 0xEE));
-    skPaintSetTextsize(text1, 12.0);
-    skPaintSetTypeface(text1, typeface);
-    const str1 = `${this.name} ${this.zIndex} x:${frame.left} y:${frame.top} ${frame.width}x${frame.height}`;
-    skCanvasDrawText(canvas, str1, str1.length, frame.left + frame.width - 180, frame.top + 50, text);
+    skCanvasDrawText(canvas, str, str.length, frame.left + this._paddingLeft, frame.top + this._paddingTop, text);
 
     if (children) {
       children.forEach((element, index) => {
@@ -348,6 +391,7 @@ class Document extends _Block {
 
   renderTick (canvas) {
     this.draw(canvas)
+    this.drawDebug(canvas)
   }
 
   dumpJsonFile () {
@@ -355,6 +399,14 @@ class Document extends _Block {
 
     const fs = require('fs')
     fs.writeFileSync('./element.json', JSON.stringify(dump, null, '\t'))
+  }
+
+  listFontNames () {
+    const mgr = skFontmgrCreateDefault()
+    const count = skFontmgrCountFamilies(mgr)
+    let name = skStringNewEmpty()
+    const ref = skFontmgrGetFamilyName(mgr, 0, name)
+    console.log('skFontmgrCountFamilies', count, name, getMemory(name))
   }
 }
 

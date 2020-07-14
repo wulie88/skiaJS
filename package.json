@@ -32,6 +32,7 @@
   },
   "gypfile": false,
   "dependencies": {
+    "heapdump": "^0.3.15",
     "yoga-layout": "^1.9.3"
   }
 }

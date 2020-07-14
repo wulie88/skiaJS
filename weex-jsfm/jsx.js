@@ -5,6 +5,7 @@ const {
   Section,
   Div
 } = require('./element')
+var heapdump = require('heapdump');
 
 var document = new Document({
   style: { flex: 1, },
@@ -31,7 +32,11 @@ var document = new Document({
       children: [
         new Div({
           style: { flex: 1, },
-          text: "1"
+          text: "1",
+          onClick() {
+            console.log('heapsnapshot', process.memoryUsage())
+            heapdump.writeSnapshot(Date.now() + '.heapsnapshot');
+          },
         }),
         new Div({
           style: {

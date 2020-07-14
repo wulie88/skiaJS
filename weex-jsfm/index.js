@@ -28,6 +28,7 @@ const context = jsfm.createInstanceContext('4', {
 eventProxy.sub(context, '4')
 
 // console.log('jsfm', jsfm, 'context', context)
+
 global.callNative = function (instanceId, [{method, module, args}]) {
   if ('createBody' === method) {
     tree.buildDescTree('_', ...args)
@@ -37,12 +38,13 @@ global.callNative = function (instanceId, [{method, module, args}]) {
     tree.updateDescAttrs(...args)
     // this.console.log('callNative', method, module, args)
   } else {
+    // others: removeElement moveElement updateStyle addEvent removeEvent
     this.console.log('callNative', method, module, args)
   }
 }
 vm.createContext(context); // Contextify the object.
 // global = Object.assign(global, context)
-vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-position.js')), context);
+vm.runInContext(fs.readFileSync(path.join(__dirname, './app.weex-calc.js')), context);
 
 
 // console.log(root)
