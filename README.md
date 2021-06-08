@@ -4,8 +4,11 @@ The N-API bindings for [Skia Graphics Library](https://skia.org/) 2D graphics li
 
 ## Platforms
 Mac OS, Linux, Windows
+Nodejs 10
 
 ## Example
+### skiaJS
+
 ```js
 // Rect
 const fill = skPaintNew();
@@ -39,4 +42,17 @@ const path = skPathNew();
 const svg = "m451.111 451.111h-451.111v-451.111h451.111zm-386.667-64.444h322.222v-322.223h-322.222z";
 skPathParseSvgString(path, svg);
 skCanvasDrawPath(canvas, path, stroke);
+```
+### self-draw engine
+
+
+| 技术      | 用途 |
+| ----------- | ----------- |
+| Nodejs  | 实现语言       |
+| SharpSkia   | Node模块，图形库 |
+| yoga | 计算Flex布局 |
+| weex-js-framework | 实现Weex宿主环境 |
+
+```sh
+node weex-jsfm/index.js
 ```

@@ -307,6 +307,7 @@ class Element {
     const str = `${this.text}`;
     skCanvasDrawText(canvas, str, str.length, frame.left + this._paddingLeft, frame.top + this._paddingTop, text);
 
+    // 深度优先
     if (children) {
       children.forEach((element, index) => {
         element.draw(canvas)

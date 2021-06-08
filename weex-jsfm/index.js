@@ -11,7 +11,7 @@ const glfw = require('glfw-n-api');
 Object.assign(global, glfw);
 Object.assign(global, skia);
 
-// steps: 
+// Framework Bridge steps: 
 // getJSFMVersion registerComponents createInstanceContext __WEEX_CALL_JAVASCRIPT__("0", {method: 'fireEvent', args: ["_root", 'viewappear]})
 // createInstanceContext('0', {bundleType: "Vue"})
 
@@ -28,7 +28,7 @@ const context = jsfm.createInstanceContext('4', {
 eventProxy.sub(context, '4')
 
 // console.log('jsfm', jsfm, 'context', context)
-
+// DOM Bridge
 global.callNative = function (instanceId, [{method, module, args}]) {
   if ('createBody' === method) {
     tree.buildDescTree('_', ...args)
